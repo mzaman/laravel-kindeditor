@@ -8,7 +8,7 @@
             "email": "masud.zmn@gmail.com"
         }
     ],
-    "minimum-stability": "dev-master",
+    "minimum-stability": "dev",
     "require": {},
     "autoload":{
         "psr-4":{
