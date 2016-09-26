@@ -1,8 +1,8 @@
 <?php
 /**
- * Created by mzaman.
- * Copyright MasudZaman
- * User: mzaman
+ * Created by github.com/mzaman
+ * Repository : github.com/mzaman/laravel-kindeditor
+ * Author : Masud Zaman, masud.zmn@gmail.com
  * Date: 26/9/26
  * Time: 12:47
  */
@@ -12,7 +12,7 @@ namespace MasudZaman\KindEditor;
 use Illuminate\Routing\Router;
 use Illuminate\Support\ServiceProvider;
 
-class MZKindEditorProvider extends ServiceProvider
+class KindEditorServiceProvider extends ServiceProvider
 {
 
 	/**
@@ -22,12 +22,12 @@ class MZKindEditorProvider extends ServiceProvider
 	 */
 	public function register()
 	{
-		$configPath = __DIR__."/../../../config/mzkindeditor.php";
-		$this->mergeConfigFrom($configPath, 'mzkindeditor');
+		$configPath = __DIR__."/../../../config/kindeditor.php";
+		$this->mergeConfigFrom($configPath, 'kindeditor');
 	}
 
 	public function boot(){
-		$configPath = __DIR__."/../../../config/mzkindeditor.php";
+		$configPath = __DIR__."/../../../config/kindeditor.php";
 
 		$this->publishes([$configPath => $this->getConfigPath()],'config');
 
@@ -36,7 +36,7 @@ class MZKindEditorProvider extends ServiceProvider
 		];
 
 		$this->getRouter()->group($routeConfig,function($router){
-			$router->any('laravel-kindeditor',["uses"=>"Controller@kindeditor"]);
+			$router->any('laravel-kindeditor',['as'=>'kindeditor.upload','uses'=>'KindeditorController@upload']);
 		});
 	}
 
@@ -46,10 +46,10 @@ class MZKindEditorProvider extends ServiceProvider
 	}
 
 	public function getConfigPath(){
-		return config_path("mzkindeditor.php");
+		return config_path("kindeditor.php");
 	}
 	protected function publishConfig($configPath)
 	{
-		$this->publishes([$configPath => config_path('mzkindeditor.php')], 'config');
+		$this->publishes([$configPath => config_path('kindeditor.php')], 'config');
 	}
 }

@@ -1,8 +1,8 @@
 <?php
 /**
- * Created by mzaman.
- * Copyright MasudZaman
- * User: mzaman
+ * Created by github.com/mzaman
+ * Repository : github.com/mzaman/laravel-kindeditor
+ * Author : Masud Zaman, masud.zmn@gmail.com
  * Date: 16/7/25
  * Time: 23:04
  */
@@ -10,15 +10,15 @@
 namespace MasudZaman\KindEditor\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Routing\Controller as BaseController;
+use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Storage;
 use MasudZaman\KindEditor\lib\Services_JSON;
 use Illuminate\Support\Facades\Input;
 use Illuminate\Support\Facades\File;
 
-class Controller extends BaseController
+class KindEditorController extends Controller
 {
-	public function kindeditor(Request $request){
+	public function upload(Request $request){
 		$file = $request->file('imgFile');
 		
 		$media = array(
