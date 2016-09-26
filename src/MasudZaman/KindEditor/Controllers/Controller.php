@@ -23,7 +23,7 @@ class Controller extends BaseController
 		
 		$media = array(
 			'name' => $file->getClientOriginalName(),
-			'extension' => $file->extension(),
+			'extension' => $file->getClientOriginalExtension(),
 			'path' => $file->path(),
 			'size'=> $file->getSize(),
 			'type' => $file->getMimeType(),
@@ -48,6 +48,8 @@ class Controller extends BaseController
 
 		$media['support'] = $ext_arr = array(
 			'image' => array('gif', 'jpg', 'jpeg', 'png', 'bmp'),
+			'audio' => array('mp3', 'wav', 'wma', 'wmv', 'mid', 'avi'),
+			'video' => array('mp4','mpg', 'asf', 'ogg', 'rmvb'),
 			'flash' => array('swf', 'flv'),
 			'media' => array('swf', 'flv', 'mp3', 'wav', 'wma', 'wmv', 'mid', 'avi', 'mpg', 'asf', 'rm', 'rmvb'),
 			'file' => array('doc', 'docx', 'xls', 'xlsx', 'ppt', 'htm', 'html', 'txt', 'zip', 'rar', 'gz', 'bz2'),
@@ -130,7 +132,7 @@ class Controller extends BaseController
 			$file_ext = array_pop($temp_arr);
 			$file_ext = trim($file_ext);
 			$file_ext = strtolower($file_ext);*/
-			$file_ext = $file->extension();
+			$file_ext = strtolower($file->getClientOriginalExtension());
 			// Check extension
 			if (in_array($file_ext, $ext_arr[$dir_name]) === false) {
 				$this->alert("Upload file extension is not allowed extension. \n only allowed " . implode(",", $ext_arr[$dir_name]) . " format.");
