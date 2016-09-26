@@ -54,7 +54,7 @@ class Controller extends BaseController
 		);
 
 		//Maximum file size
-		$media['max_size'] = $max_size = 1000000;
+		$media['max_size'] = $max_size = 100000000;
 
 
 		//$save_path = realpath($save_path) . '/';
@@ -119,8 +119,9 @@ class Controller extends BaseController
 				$this->alert("Upload file size exceeds the limit.");
 			}
 			// Check if the directory name exist
-			$uri_dir = $request->only('dir');
-			$dir_name = empty($uri_dir[0]) ? 'image' : trim($uri_dir[0]);
+			// $uri_dir = $request->only('dir');
+			$uri_dir = $_GET['dir'];
+			$dir_name = empty($uri_dir) ? 'image' : trim($uri_dir);
 			if (empty($ext_arr[$dir_name])) {
 				$this->alert("Directory name is incorrect.");
 			}
@@ -129,10 +130,10 @@ class Controller extends BaseController
 			$file_ext = array_pop($temp_arr);
 			$file_ext = trim($file_ext);
 			$file_ext = strtolower($file_ext);*/
-			$file_ext = strtolower($file->extension());
+			$file_ext = $file->extension();
 			// Check extension
 			if (in_array($file_ext, $ext_arr[$dir_name]) === false) {
-				$this->alert("Upload file extension is not allowed extension. \n only allowed" . implode(",", $ext_arr[$dir_name]) . "format.");
+				$this->alert("Upload file extension is not allowed extension. \n only allowed " . implode(",", $ext_arr[$dir_name]) . " format.");
 			}
 			// Create a folder
 			if ($dir_name !== '') {
@@ -171,7 +172,7 @@ class Controller extends BaseController
 			// $file_url = config("filesystems.upload.domain").str_replace('//','/',config("filesystems.upload.prefix").$file_url);
 			header('Content-type: text/html; charset=UTF-8');
 			$json = new Services_JSON();
-			echo $json->encode(array('error' => 0, 'url' => $file_url, 'req' => $request->only('dir'),  'rs' => $media, 'ro'=> $_FILES['imgFile']));
+			echo $json->encode(array('error' => 0, 'url' => $file_url, 'req' => $ext_arr[$dir_name],  'rs' => $media, 'ro'=> $_FILES['imgFile']));
 			exit;
 		}
 
