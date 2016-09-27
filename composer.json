@@ -18,7 +18,7 @@
     },
     "extra": {
         "branch-alias": {
-            "kreotive": "0.1"
+            "kreotive": "0.1-dev"
         }
     }
 }
