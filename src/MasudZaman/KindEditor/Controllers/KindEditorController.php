@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Storage;
 use MasudZaman\KindEditor\lib\Services_JSON;
 use Illuminate\Support\Facades\Input;
 use Illuminate\Support\Facades\File;
+use Unisharp\Setting\SettingFacade as Setting;
 
 class KindEditorController extends Controller
 {
@@ -46,17 +47,21 @@ class KindEditorController extends Controller
 
 		;
 
-		$media['support'] = $ext_arr = array(
-			'image' => array('gif', 'jpg', 'jpeg', 'png', 'bmp'),
-			'audio' => array('mp3', 'wav', 'wma', 'wmv', 'mid', 'avi'),
-			'video' => array('mp4','mpg', 'asf', 'ogg', 'rmvb'),
-			'flash' => array('swf', 'flv'),
-			'media' => array('swf', 'flv', 'mp3', 'wav', 'wma', 'wmv', 'mid', 'avi', 'mpg', 'asf', 'rm', 'rmvb'),
-			'file' => array('doc', 'docx', 'xls', 'xlsx', 'ppt', 'htm', 'html', 'txt', 'zip', 'rar', 'gz', 'bz2'),
-		);
+		$ext_arr = [
+			'image' => Setting::has('image_extensions') ? Setting::get('image_extensions') : ['gif', 'jpg', 'jpeg', 'png', 'bmp'],
+			'audio' => Setting::has('audio_extensions') ? Setting::get('audio_extensions') : ['mp3', 'wav', 'wma', 'wmv', 'mid', 'avi'],
+			'video' => Setting::has('video_extensions') ? Setting::get('video_extensions') : ['mp4','mpg', 'asf', 'ogg', 'rmvb'],
+			'flash' => ['swf', 'flv'],
+			'media' => ['swf', 'flv', 'mp3', 'wav', 'wma', 'wmv', 'mid', 'avi', 'mpg', 'asf', 'rm', 'rmvb'],
+			'file' =>  Setting::has('document_extensions') ? Setting::get('document_extensions') : ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'htm', 'html', 'txt', 'zip', 'rar', 'gz', 'bz2']
+		];
+
+		$media['support'] = $ext_arr;
 
 		//Maximum file size
-		$media['max_size'] = $max_size = 100000000;
+		$get_setting_key = $_GET['dir'] . '_limit';
+
+		$media['max_size'] = $max_size = Setting::has($get_setting_key) ? ( Setting::get($get_setting_key) * 1024 * 1024 ) : (1024 * 1024);
 
 
 		//$save_path = realpath($save_path) . '/';
@@ -118,7 +123,7 @@ class KindEditorController extends Controller
 			}
 			// Check the file size
 			if ($file_size > $max_size) {
-				$this->alert("Upload file size exceeds the limit.");
+				$this->alert("Upload file size ( " . $this->FileSizeConvert($file_size) . " ) exceeds the limit ( maximum size = " . $this->FileSizeConvert($max_size) . " )");
 			}
 			// Check if the directory name exist
 			// $uri_dir = $request->only('dir');
@@ -181,12 +186,21 @@ class KindEditorController extends Controller
 	}
 
 
-
-
 	function alert($msg) {
 		header('Content-type: text/html; charset=UTF-8');
 		$json = new Services_JSON();
 		echo $json->encode(array('error' => 1, 'message' => $msg));
 		exit;
+	}
+
+	function FileSizeConvert($size, $precision = 2) {
+	    static $units = array('B','kB','MB','GB','TB','PB','EB','ZB','YB');
+	    $step = 1024;
+	    $i = 0;
+	    while (($size / $step) > 0.9) {
+	        $size = $size / $step;
+	        $i++;
+	    }
+	    return round($size, $precision). ' ' .$units[$i];
 	}
 }

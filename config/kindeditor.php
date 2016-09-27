@@ -7,5 +7,5 @@
  * Time: 16:48
  */
 return [
-	"kindeditorUrl"=> "laravel-kindeditor"
+	"url"=> "laravel-kindeditor"
 ];
