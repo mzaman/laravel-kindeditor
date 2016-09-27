@@ -15,5 +15,10 @@
         "psr-4":{
             "MasudZaman\\KindEditor\\":"src/MasudZaman/KindEditor/"
         }
+    },
+    "extra": {
+        "branch-alias": {
+            "kreotive": "0.1"
+        }
     }
 }
