@@ -12,63 +12,45 @@ namespace MasudZaman\KindEditor\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Storage;
-use MasudZaman\KindEditor\lib\Services_JSON;
 use Illuminate\Support\Facades\Input;
 use Illuminate\Support\Facades\File;
 use Unisharp\Setting\SettingFacade as Setting;
+use MasudZaman\KindEditor\lib\Services_JSON;
 
 class KindEditorController extends Controller
 {
 	public function upload(Request $request){
+
 		$file = $request->file('imgFile');
+		$mediaType = trim($request->input('dir'));
 		
 		$media = array(
-			'name' => $file->getClientOriginalName(),
-			'extension' => $file->getClientOriginalExtension(),
-			'path' => $file->path(),
-			'size'=> $file->getSize(),
-			'type' => $file->getMimeType(),
-			'filetype' => $file->getType(),
+			'fileName' => $file->getClientOriginalName(),
+			'fileExtension' => $file->getClientOriginalExtension(),
+			'tmpName' => $file->path(),
+			'fileSize'=> $file->getSize(),/*
+			'type' => $file->getMimeType(),*/
+			'gettype' => $file->getType(),
 			'valid' => $file->isValid(),
 			'error' => $file->getError()
 		);
-		/*$php_path = dirname(__FILE__) . '/';
-		$php_url = dirname($_SERVER['PHP_SELF']) . '/';*/
 
 		// File directory path
-		//$save_path = $php_path . '../attached/';
-		$save_path = '/attached/';
-		//File directory URL
-		//$save_url = $php_url . '../attached/';
-		$save_url = '/attached/';
-		
-		$media['save_path'] = $save_path = config("filesystems.disks.upload.root").config("filesystems.disks.upload.prefix");
-		$media['save_url'] = $save_url = config("filesystems.disks.upload.domain").config("filesystems.disks.upload.prefix");
+		$media['savePath'] = config('filesystems.disks.upload.root').config('filesystems.disks.upload.prefix');
 
-		;
+		//File directory URL	
+		$media['saveUrl'] = config('filesystems.disks.upload.domain').config('filesystems.disks.upload.prefix');
 
-		$ext_arr = [
-			'image' => Setting::has('image_extensions') ? Setting::get('image_extensions') : ['gif', 'jpg', 'jpeg', 'png', 'bmp'],
-			'audio' => Setting::has('audio_extensions') ? Setting::get('audio_extensions') : ['mp3', 'wav', 'wma', 'wmv', 'mid', 'avi'],
-			'video' => Setting::has('video_extensions') ? Setting::get('video_extensions') : ['mp4','mpg', 'asf', 'ogg', 'rmvb'],
-			'flash' => ['swf', 'flv'],
-			'media' => ['swf', 'flv', 'mp3', 'wav', 'wma', 'wmv', 'mid', 'avi', 'mpg', 'asf', 'rm', 'rmvb'],
-			'file' =>  Setting::has('document_extensions') ? Setting::get('document_extensions') : ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'htm', 'html', 'txt', 'zip', 'rar', 'gz', 'bz2']
-		];
-
-		$media['support'] = $ext_arr;
+		$media['support'][$mediaType] = Setting::has( $mediaType . '_extensions' ) ? Setting::get( $mediaType . '_extensions' ) : config('kindeditor.support.'. $mediaType );
 
 		//Maximum file size
-		$get_setting_key = $_GET['dir'] . '_limit';
+		$media['maxSize'] = Setting::has( $mediaType . '_limit' ) ? (Setting::get( $mediaType . '_limit' ) * 1024 * 1024): config('kindeditor.support.'. $mediaType .'.size');
 
-		$media['max_size'] = $max_size = Setting::has($get_setting_key) ? ( Setting::get($get_setting_key) * 1024 * 1024 ) : (1024 * 1024);
-
-
-		//$save_path = realpath($save_path) . '/';
+		extract($media);
 
 		//PHP upload failed
-		if (!empty($_FILES['imgFile']['error'])) {
-			switch($_FILES['imgFile']['error']){
+		if (!empty($error)) {
+			switch($error){
 				case '1':
 					$error = 'Over php.ini allowable size.';
 					break;
@@ -99,87 +81,72 @@ class KindEditorController extends Controller
 
 		// Before uploading files
 		if (empty($_FILES) === false) {
-			// The original file name
-			$file_name = $file->getClientOriginalName();
-			// Temporary file name on server
-			$tmp_name = $file->path();
-			// File size
-			$file_size = $file->getSize();
+
 			// Check the file name
-			if (!$file_name) {
-				$this->alert("Please select a file.");
+			if (!$fileName) {
+				$this->alert('Please select a file.');
 			}
 			// Check the directory
-			if (File::isDirectory($save_path) === false) {
-				$this->alert($save_path. "Upload directory does not exist.");
+			if (File::isDirectory($savePath) === false) {
+				$this->alert($savePath. 'Upload directory does not exist.');
 			}
 			// Check the directory write permission
-			if (File::isWritable($save_path) === false) {
-				$this->alert("Upload directory does not have write permission.");
+			if (File::isWritable($savePath) === false) {
+				$this->alert('Upload directory does not have write permission.');
 			}
 			// Check if uploaded
-			if (@is_uploaded_file($tmp_name) === false) {
-				$this->alert("upload failed.");
+			if (@is_uploaded_file($tmpName) === false) {
+				$this->alert('upload failed.');
 			}
 			// Check the file size
-			if ($file_size > $max_size) {
-				$this->alert("Upload file size ( " . $this->FileSizeConvert($file_size) . " ) exceeds the limit ( maximum size = " . $this->FileSizeConvert($max_size) . " )");
+			if ($fileSize > $maxSize) {
+				$this->alert('Upload file size ( ' . $this->FileSizeConvert($fileSize) . ' ) exceeds the limit ( maximum size = ' . $this->FileSizeConvert($maxSize) . ' )');
 			}
 			// Check if the directory name exist
-			// $uri_dir = $request->only('dir');
-			$uri_dir = $_GET['dir'];
-			$dir_name = empty($uri_dir) ? 'image' : trim($uri_dir);
-			if (empty($ext_arr[$dir_name])) {
-				$this->alert("Directory name is incorrect.");
+			$dirName = empty($mediaType) ? 'image' : $mediaType;
+
+			if (empty($support[$dirName])) {
+				$this->alert('Directory name is incorrect.');
 			}
 			// Get the file extension
-			/*$temp_arr = explode(".", $file_name);
-			$file_ext = array_pop($temp_arr);
-			$file_ext = trim($file_ext);
-			$file_ext = strtolower($file_ext);*/
-			$file_ext = strtolower($file->getClientOriginalExtension());
+			$fileExt = strtolower($fileExtension);
 			// Check extension
-			if (in_array($file_ext, $ext_arr[$dir_name]) === false) {
-				$this->alert("Upload file extension is not allowed extension. \n only allowed " . implode(",", $ext_arr[$dir_name]) . " format.");
+			if (in_array($fileExt, $support[$dirName]) === false) {
+				$this->alert("Upload file extension is not allowed extension. \n only allowed " . implode(',', $support[$dirName]) . " format.");
 			}
 			// Create a folder
-			if ($dir_name !== '') {
-				$save_path .= $dir_name . "/";
-				$save_url .= $dir_name . "/";
-				if (!file_exists($save_path)) {
-					File::makeDirectory($save_path);
+			if ($dirName !== '') {
+				$savePath .= $dirName . '/';
+				$saveUrl .= $dirName . '/';
+				if (!file_exists($savePath)) {
+					File::makeDirectory($savePath);
 				}
 			}
-			$ymd = date("Ymd");
-			$save_path .= $ymd . "/";
-			$save_url .= $ymd . "/";
-			if (!file_exists($save_path)) {
-				File::makeDirectory($save_path);
+
+			$ymd = date('Ymd');
+			$savePath .= $ymd . '/';
+			$saveUrl .= $ymd . '/';
+			if (!file_exists($savePath)) {
+				File::makeDirectory($savePath);
 			}
 			// A new file name
-			$new_file_name = date("YmdHis") . '_' . rand(10000, 99999) . '.' . $file_ext;
+			$newFileName = date('YmdHis') . '_' . rand(10000, 99999) . '.' . $fileExt;
 			// Moving Files
-			$file_path = $save_path . $new_file_name;
-/*
-			if (move_uploaded_file($tmp_name, $file_path) === false) {
-				$this->alert("Upload file failed.");
-			}*/
-			@chmod($file_path, 0644);
+			$filePath = $savePath . $newFileName;
 			
-			$file_url = $save_url . $new_file_name;
+			$fileUrl = $saveUrl . $newFileName;
 
-			try{
-				// echo $file_path; 
+			try{ 
 				// uploading file to given path
-				$file->move($save_path, $new_file_name);
+				$file->move($savePath, $newFileName);
 			}catch (\Exception $e){
 
 			}
 
-			// $file_url = config("filesystems.upload.domain").str_replace('//','/',config("filesystems.upload.prefix").$file_url);
 			header('Content-type: text/html; charset=UTF-8');
 			$json = new Services_JSON();
-			echo $json->encode(array('error' => 0, 'url' => $file_url, 'req' => $ext_arr[$dir_name],  'rs' => $media, 'ro'=> $_FILES['imgFile']));
+			
+			echo $json->encode(array('error' => 0, 'url' => $fileUrl, 'req' => Setting::has( $mediaType . '_extensions' ),  'rs' => $media, 'ro'=>  Setting::get( $mediaType . '_extensions' )));
 			exit;
 		}
 
