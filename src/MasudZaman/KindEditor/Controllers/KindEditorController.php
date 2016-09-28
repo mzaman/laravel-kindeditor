@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\Input;
 use Illuminate\Support\Facades\File;
 use Unisharp\Setting\SettingFacade as Setting;
 use MasudZaman\KindEditor\lib\Services_JSON;
+use Auth;
+use App\User;
 
 class KindEditorController extends Controller
 {
@@ -23,54 +25,70 @@ class KindEditorController extends Controller
 
 		$file = $request->file('imgFile');
 		$mediaType = trim($request->input('dir'));
+		$saveDirectory = config('filesystems.disks.upload.prefix');
 		
 		$media = array(
 			'fileName' => $file->getClientOriginalName(),
 			'fileExtension' => $file->getClientOriginalExtension(),
 			'tmpName' => $file->path(),
 			'fileSize'=> $file->getSize(),/*
-			'type' => $file->getMimeType(),*/
-			'gettype' => $file->getType(),
+			'type' => $file->getMimeType(),
+			'getType' => $file->getType(),*/
 			'valid' => $file->isValid(),
 			'error' => $file->getError()
 		);
-
 		// File directory path
-		$media['savePath'] = config('filesystems.disks.upload.root').config('filesystems.disks.upload.prefix');
+		$media['savePath'] = config('filesystems.disks.upload.root').$saveDirectory;
 
 		//File directory URL	
-		$media['saveUrl'] = config('filesystems.disks.upload.domain').config('filesystems.disks.upload.prefix');
+		$media['saveUrl'] = config('filesystems.disks.upload.domain').$saveDirectory;
 
 		$media['support'][$mediaType] = Setting::has( $mediaType . '_extensions' ) ? Setting::get( $mediaType . '_extensions' ) : config('kindeditor.support.'. $mediaType );
 
 		//Maximum file size
 		$media['maxSize'] = Setting::has( $mediaType . '_limit' ) ? (Setting::get( $mediaType . '_limit' ) * 1024 * 1024): config('kindeditor.support.'. $mediaType .'.size');
 
+		// Extract all keys
 		extract($media);
 
+		// Check if the directory name exist
+		$dirName = empty($mediaType) ? 'image' : $mediaType;
+
+		if (empty($support[$dirName])) {
+			$this->alert('Directory name is incorrect.');
+		}
+		
+		// Get the file extension
+		$fileExt = strtolower($fileExtension);
+		
+		// Check extension
+		if (in_array($fileExt, $support[$dirName]) === false) {
+			$this->alert("Upload ". $mediaType ." extension is not allowed extension. \n only allowed " . implode(',', $support[$dirName]) . " format.");
+		}
+		
 		//PHP upload failed
 		if (!empty($error)) {
 			switch($error){
 				case '1':
-					$error = 'Over php.ini allowable size.';
+					$error = 'The uploaded '. $mediaType .' exceeds the upload_max_filesize directive in php.ini';
 					break;
 				case '2':
-					$error = 'Form allows more than size.';
+					$error = 'The uploaded '. $mediaType .' exceeds the MAX_FILE_SIZE directive that was specified in the HTML form';
 					break;
 				case '3':
-					$error = 'Picture was only partially uploaded.';
+					$error = 'File was only partially uploaded.';
 					break;
 				case '4':
-					$error = 'Please select an image.';
+					$error = 'Please select '. $mediaType;
 					break;
 				case '6':
 					$error = 'Missing a temporary directory.';
 					break;
 				case '7':
-					$error = 'Write files to a hard drive failure.';
+					$error = 'Write '. $mediaType .' to a hard drive failure.';
 					break;
 				case '8':
-					$error = 'File upload stopped by extension。';
+					$error = 'A PHP extension stopped the '. $mediaType .' upload';
 					break;
 				case '999':
 				default:
@@ -79,12 +97,12 @@ class KindEditorController extends Controller
 			$this->alert($error);
 		}
 
-		// Before uploading files
-		if (empty($_FILES) === false) {
+		// Before uploading the files
+		if (empty($_FILES) === false && $valid) {
 
 			// Check the file name
 			if (!$fileName) {
-				$this->alert('Please select a file.');
+				$this->alert('Please select '. $mediaType);
 			}
 			// Check the directory
 			if (File::isDirectory($savePath) === false) {
@@ -100,20 +118,9 @@ class KindEditorController extends Controller
 			}
 			// Check the file size
 			if ($fileSize > $maxSize) {
-				$this->alert('Upload file size ( ' . $this->FileSizeConvert($fileSize) . ' ) exceeds the limit ( maximum size = ' . $this->FileSizeConvert($maxSize) . ' )');
+				$this->alert('Upload '. $mediaType .' size ( ' . $this->humanReadable($fileSize) . ' ) exceeds the limit ( maximum size = ' . $this->humanReadable($maxSize) . ' )');
 			}
-			// Check if the directory name exist
-			$dirName = empty($mediaType) ? 'image' : $mediaType;
-
-			if (empty($support[$dirName])) {
-				$this->alert('Directory name is incorrect.');
-			}
-			// Get the file extension
-			$fileExt = strtolower($fileExtension);
-			// Check extension
-			if (in_array($fileExt, $support[$dirName]) === false) {
-				$this->alert("Upload file extension is not allowed extension. \n only allowed " . implode(',', $support[$dirName]) . " format.");
-			}
+			
 			// Create a folder
 			if ($dirName !== '') {
 				$savePath .= $dirName . '/';
@@ -123,22 +130,22 @@ class KindEditorController extends Controller
 				}
 			}
 
-			$ymd = date('Ymd');
-			$savePath .= $ymd . '/';
-			$saveUrl .= $ymd . '/';
+			$userDirectory = User::find(1/*\Auth::user()->id*/)->id;
+			$savePath .= $userDirectory . '/';
+			$saveUrl .= $userDirectory . '/';
 			if (!file_exists($savePath)) {
 				File::makeDirectory($savePath);
 			}
+
 			// A new file name
-			$newFileName = date('YmdHis') . '_' . rand(10000, 99999) . '.' . $fileExt;
+			$newFilename = date('YmdHis') . '_' . rand(10000, 99999) . '.' . $fileExt;
 			// Moving Files
-			$filePath = $savePath . $newFileName;
-			
-			$fileUrl = $saveUrl . $newFileName;
+			$filePath = $savePath . $newFilename;
+			$fileUrl = $saveUrl . $newFilename;
 
 			try{ 
 				// uploading file to given path
-				$file->move($savePath, $newFileName);
+				$file->move($savePath, $newFilename);
 			}catch (\Exception $e){
 
 			}
@@ -160,7 +167,7 @@ class KindEditorController extends Controller
 		exit;
 	}
 
-	function FileSizeConvert($size, $precision = 2) {
+	function humanReadable($size, $precision = 2) {
 	    static $units = array('B','kB','MB','GB','TB','PB','EB','ZB','YB');
 	    $step = 1024;
 	    $i = 0;
