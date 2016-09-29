@@ -130,7 +130,7 @@ class KindEditorController extends Controller
 				}
 			}
 
-			$userDirectory = User::find(1/*\Auth::user()->id*/)->id;
+			$userDirectory = User::find(Auth::user()->id)->id;
 			$savePath .= $userDirectory . '/';
 			$saveUrl .= $userDirectory . '/';
 			if (!file_exists($savePath)) {
