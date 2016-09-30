@@ -9,8 +9,11 @@
 
 namespace MasudZaman\KindEditor\Controllers;
 
-use Illuminate\Http\Request;
+use Illuminate\Foundation\Validation\ValidatesRequests;
+use Illuminate\Contracts\Auth\Guard;
+use Illuminate\Foundation\Bus\DispatchesJobs;
 use Illuminate\Routing\Controller;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Input;
 use Illuminate\Support\Facades\File;
@@ -20,7 +23,8 @@ use Auth;
 use App\User;
 
 class KindEditorController extends Controller
-{
+{    
+
 	public function upload(Request $request){
 
 		$file = $request->file('imgFile');
@@ -129,7 +133,7 @@ class KindEditorController extends Controller
 					File::makeDirectory($savePath);
 				}
 			}
-
+			
 			$userDirectory = User::find(Auth::user()->id)->id;
 			$savePath .= $userDirectory . '/';
 			$saveUrl .= $userDirectory . '/';
