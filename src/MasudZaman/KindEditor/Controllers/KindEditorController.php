@@ -9,18 +9,14 @@
 
 namespace MasudZaman\KindEditor\Controllers;
 
-use Illuminate\Foundation\Validation\ValidatesRequests;
-use Illuminate\Contracts\Auth\Guard;
-use Illuminate\Foundation\Bus\DispatchesJobs;
-use Illuminate\Routing\Controller;
+/*use Illuminate\Support\Facades\Storage;*/
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Input;
+use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\File;
-use Unisharp\Setting\SettingFacade as Setting;
+/*use Illuminate\Support\Facades\Input;*/
 use MasudZaman\KindEditor\lib\Services_JSON;
+use Unisharp\Setting\SettingFacade as Setting;
 use Auth;
-use App\User;
 
 class KindEditorController extends Controller
 {    
@@ -47,10 +43,10 @@ class KindEditorController extends Controller
 		//File directory URL	
 		$media['saveUrl'] = config('filesystems.disks.upload.domain').$saveDirectory;
 
-		$media['support'][$mediaType] = Setting::has( $mediaType . '_extensions' ) ? Setting::get( $mediaType . '_extensions' ) : config('kindeditor.support.'. $mediaType );
+		$media['allowedExtensions'][$mediaType] = Setting::has( $mediaType . '_extensions' ) ? Setting::get( $mediaType . '_extensions' ) : config('kindeditor.allowedExtensions.'. $mediaType );
 
 		//Maximum file size
-		$media['maxSize'] = Setting::has( $mediaType . '_limit' ) ? (Setting::get( $mediaType . '_limit' ) * 1024 * 1024): config('kindeditor.support.'. $mediaType .'.size');
+		$media['maxSize'] = Setting::has( $mediaType . '_limit' ) ? (Setting::get( $mediaType . '_limit' ) * 1024 * 1024): config('kindeditor.maxSize.'. $mediaType);
 
 		// Extract all keys
 		extract($media);
@@ -58,7 +54,7 @@ class KindEditorController extends Controller
 		// Check if the directory name exist
 		$dirName = empty($mediaType) ? 'image' : $mediaType;
 
-		if (empty($support[$dirName])) {
+		if (empty($allowedExtensions[$dirName])) {
 			$this->alert('Directory name is incorrect.');
 		}
 		
@@ -66,8 +62,8 @@ class KindEditorController extends Controller
 		$fileExt = strtolower($fileExtension);
 		
 		// Check extension
-		if (in_array($fileExt, $support[$dirName]) === false) {
-			$this->alert("Upload ". $mediaType ." extension is not allowed extension. \n only allowed " . implode(',', $support[$dirName]) . " format.");
+		if (in_array($fileExt, $allowedExtensions[$dirName]) === false) {
+			$this->alert("Upload ". $mediaType ." extension is not allowed extension. \n only allowed " . implode(',', $allowedExtensions[$dirName]) . " format.");
 		}
 		
 		//PHP upload failed
@@ -108,9 +104,10 @@ class KindEditorController extends Controller
 			if (!$fileName) {
 				$this->alert('Please select '. $mediaType);
 			}
-			// Check the directory
+			// Check or create the directory
 			if (File::isDirectory($savePath) === false) {
-				$this->alert($savePath. 'Upload directory does not exist.');
+				File::makeDirectory($savePath);
+				// $this->alert($savePath. 'Upload directory does not exist.');
 			}
 			// Check the directory write permission
 			if (File::isWritable($savePath) === false) {
@@ -122,42 +119,52 @@ class KindEditorController extends Controller
 			}
 			// Check the file size
 			if ($fileSize > $maxSize) {
-				$this->alert('Upload '. $mediaType .' size ( ' . $this->humanReadable($fileSize) . ' ) exceeds the limit ( maximum size = ' . $this->humanReadable($maxSize) . ' )');
+				$this->alert('Upload '. $mediaType .' size ( ' . $this->humanReadableFileSize($fileSize) . ' ) exceeds the limit ( maximum size = ' . $this->humanReadableFileSize($maxSize) . ' )');
 			}
 			
 			// Create a folder
 			if ($dirName !== '') {
 				$savePath .= $dirName . '/';
 				$saveUrl .= $dirName . '/';
-				if (!file_exists($savePath)) {
+				if (File::isDirectory($savePath) === false) {
 					File::makeDirectory($savePath);
 				}
 			}
 			
-			$userDirectory = User::find(Auth::user()->id)->id;
+			$nDigit = 10;
+			$nDigitRandomNumber = rand(pow(10, $nDigit-1), pow(10, $nDigit)-1);
+			$userDirectory = $nDigitRandomNumber . /*User::find(*/Auth::user()/*->id)*/->id;
 			$savePath .= $userDirectory . '/';
 			$saveUrl .= $userDirectory . '/';
-			if (!file_exists($savePath)) {
+			if (File::isDirectory($savePath) === false) {
 				File::makeDirectory($savePath);
 			}
 
 			// A new file name
-			$newFilename = date('YmdHis') . '_' . rand(10000, 99999) . '.' . $fileExt;
+			// $newFileName = $this->uniqueFilename($savePath, $fileName, $fileExt);
+			$newFileName = $mediaType . '_' . $userDirectory . '_' . md5($fileName. time()) . '.' . $fileExt;
+			
 			// Moving Files
-			$filePath = $savePath . $newFilename;
-			$fileUrl = $saveUrl . $newFilename;
+			$filePath = $savePath . $newFileName;
+			$fileUrl = $saveUrl . $newFileName;
 
 			try{ 
 				// uploading file to given path
-				$file->move($savePath, $newFilename);
+				$file->move($savePath, $newFileName);
 			}catch (\Exception $e){
 
 			}
 
+			$category = $mediaType == 'audio' || 
+						$mediaType == 'video' || 
+						$mediaType == 'file'  ||
+						$mediaType == 'document'  
+						? ucfirst($mediaType/* == 'document' ? 'file' : $mediaType*/): 'Article';
+
 			header('Content-type: text/html; charset=UTF-8');
 			$json = new Services_JSON();
 			
-			echo $json->encode(array('error' => 0, 'url' => $fileUrl, 'req' => Setting::has( $mediaType . '_extensions' ),  'rs' => $media, 'ro'=>  Setting::get( $mediaType . '_extensions' )));
+			echo $json->encode(['error' => 0, 'url' => $fileUrl, 'category' => $category, 'req' => Setting::has( $mediaType . '_extensions' ),  'rs' => $media, 'ro'=>  Setting::get( $mediaType . '_extensions' )]);
 			exit;
 		}
 
@@ -171,7 +178,7 @@ class KindEditorController extends Controller
 		exit;
 	}
 
-	function humanReadable($size, $precision = 2) {
+	function humanReadableFileSize($size, $precision = 2) {
 	    static $units = array('B','kB','MB','GB','TB','PB','EB','ZB','YB');
 	    $step = 1024;
 	    $i = 0;
@@ -180,5 +187,20 @@ class KindEditorController extends Controller
 	        $i++;
 	    }
 	    return round($size, $precision). ' ' .$units[$i];
+	}
+
+	function uniqueFilename($path, $name, $ext) {
+		
+		$output = $name;
+		$basename = basename($name, '.' . $ext);
+		$i = 2;
+		
+		while(File::exists($path . '/' . $output)) {
+			$output = $basename . $i . '.' . $ext;
+			$i ++;
+		}
+		
+		return $output;
+		
 	}
 }
