@@ -132,7 +132,8 @@ class KindEditorController extends Controller
 			}
 			
 			$nDigit = 10;
-			$nDigitRandomNumber = /*$this->nDigitRandom($nDigit);*/
+			$nDigitRandomNumber = 
+			/*$this->nDigitRandom($nDigit);*/
 			/*rand(pow(10, $nDigit-1), pow(10, $nDigit)-1);*/
 			join('', array_map(function($value) { return $value == 1 ? mt_rand(1, 9) : mt_rand(0, 9); }, range(1, $nDigit)));
 			// return $nDigitRandomNumber;
