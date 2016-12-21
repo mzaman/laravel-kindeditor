@@ -38,7 +38,7 @@ class KindEditorServiceProvider extends ServiceProvider
 		$this->getRouter()->group($routeConfig,function($router){
 			$uri = \Config::has('kindeditor.url') ? \Config::get('kindeditor.url') : 'laravel-kindeditor';
 
-			$router->any($uri, ['as'=>'kindeditor.upload','uses'=>'KindeditorController@upload'/*,'middleware' => ['web']*/]);
+			$router->any($uri, ['as'=>'kindeditor.upload','uses'=>'KindEditorController@upload'/*,'middleware' => ['web']*/]);
 		});
 	}
 
