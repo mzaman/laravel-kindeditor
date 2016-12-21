@@ -132,8 +132,12 @@ class KindEditorController extends Controller
 			}
 			
 			$nDigit = 10;
-			$nDigitRandomNumber = rand(pow(10, $nDigit-1), pow(10, $nDigit)-1);
-			$userDirectory = $nDigitRandomNumber . /*User::find(*/Auth::user()/*->id)*/->id;
+			$nDigitRandomNumber = /*$this->nDigitRandom($nDigit);*/
+			/*rand(pow(10, $nDigit-1), pow(10, $nDigit)-1);*/
+			join('', array_map(function($value) { return $value == 1 ? mt_rand(1, 9) : mt_rand(0, 9); }, range(1, $nDigit)));
+			// return $nDigitRandomNumber;
+			// echo $nDigitRandomNumber;
+			$userDirectory = $nDigitRandomNumber /*.*/ /*User::find(*//*Auth::user()*//*->id)*//*->id*/;
 			$savePath .= $userDirectory . '/';
 			$saveUrl .= $userDirectory . '/';
 			if (File::isDirectory($savePath) === false) {
@@ -176,6 +180,16 @@ class KindEditorController extends Controller
 		$json = new Services_JSON();
 		echo $json->encode(array('error' => 1, 'message' => $msg));
 		exit;
+	}
+
+	function nDigitRandom($digits) {
+	  $temp = "";
+
+	  for ($i = 0; $i < $digits; $i++) {
+	    $temp .= rand(0, 9);
+	  }
+
+	  return (int)$temp;
 	}
 
 	function humanReadableFileSize($size, $precision = 2) {
