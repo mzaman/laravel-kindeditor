@@ -1,7 +1,12 @@
-# laravel-kindeditor
+## Laravel KindEditor Integration
 
-DO NOT USE THIS!! I DO NOT MAINTAIN IT! 
+**Note:** This repository is no longer maintained.
 
-Url : laravel-kindeditor
+### Overview
+This is the KindEditor JS plugin integrated into my Laravel project, **Kreotive**. It provides a dynamic solution for managing, embedding, and displaying multimedia files within the interactive content writing area of the HTML **KindEditor** JS plugin.
 
-Kindeditor JS plugin that used in my laravel project "Kreotive", where managing, embedding and showing the multimedia files in the interactive content writing area of the HTML Kindeditor JS plugin was needed.
+KindEditor allows users to easily insert and manage multimedia content while writing. This integration supports a seamless multimedia experience within the Laravel-based content management system.
+
+### Features:
+- **Multimedia Management:** Embed and manage multimedia files directly in the editor.
+- **Interactive Content Creation:** Enhance user experience with multimedia-rich content editing.
